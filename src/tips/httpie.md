@@ -1,21 +1,24 @@
 ---
 title: Httpie
-description: HTTP human friendly CLI.
+description: HTTPie (pronounced aitch-tee-tee-pie) is a command-line HTTP client. Its goal is to make CLI interaction with web services as human-friendly as possible. HTTPie is designed for testing, debugging, and generally interacting with APIs & HTTP servers.
 author: John Jerald E. De Chavez
 date: 2022-05-07T07:24:00.000Z
 tags:
   - http
   - cli
   - resource
+installations:
+  - { title: "test", command: "test" }
 ---
 
-#
+Httpie a simple yet powerful command-line HTTP and API testing client for the API era.
+It used for testing and debugging of APIs, HTTP servers, and web services.
 
-This is a Heading h1
+### Getting Started
 
-## This is a Heading h2
-
-###### This is a Heading h6
+'''bash
+$ pacman -Syu httpie
+'''
 
 ## Emphasis
 
