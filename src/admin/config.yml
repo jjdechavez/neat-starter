@@ -3,7 +3,8 @@ backend:
   name: git-gateway
   branch: master
   ### enable below lines for github integration ###
-  repo: jjdechavez/neat-starter
+  # name: github
+  # repo: surjithctly/neat-starter
 media_folder: "src/static/img"
 public_folder: "/static/img"
 
@@ -23,12 +24,11 @@ collections:
       - { label: "Author", name: "author", widget: "string" }
       - { label: "Publish Date", name: "date", widget: "datetime" }
       - { label: "Body", name: "body", widget: "markdown" }
-      - widget: select
+      - widget: list
         label: "tags"
         name: "tags"
-        multiple: true
-        create: true
-        options: ["Tags", "created", "from", "config.yml"]
+        collapsed: false
+        allow_add: true
   - label: "Settings"
     name: "settings"
     editor:
