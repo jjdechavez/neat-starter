@@ -1,5 +1,5 @@
 ---
-title: "AWS: Update API params old to new params"
+title: Update API params old to new params on AWS API Gateway
 description: AWS API Gateway update params
 author: John Jerald E. De Chavez
 date: 2022-06-08T08:18:13.398Z
