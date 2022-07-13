@@ -12,7 +12,7 @@ Getting tired opening new tab for commands. So, I decided to collect the common 
 **[List users](https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/list-users.html)**\
 `aws cognito-idp list-users --profile your-aws-profile --region us-east-1 --user-pool-id us-east-1_your-pool-id`
 
-List users with filter
+List users with filter\
 `aws cognito-idp list-users --profile your-aws-profile --region us-east-1 --user-pool-id us-east-1_your-pool-id --filter 'cognito:user_status = "FORCE_CHANGE_PASSWORD"'`
 
 **[Get user](https://docs.aws.amazon.com/cli/latest/reference/cognito-idp/admin-get-user.html)**\
