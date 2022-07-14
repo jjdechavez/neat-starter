@@ -28,4 +28,9 @@ On Dig website, enter the hostname or ip address
 
 `cp-upload-staging.digiteer.dev`
 
-Set type as [CNAME](https://www.cloudflare.com/learning/dns/dns-records/dns-cname-record/) then click Dig button
+Set type as [CNAME](https://www.cloudflare.com/learning/dns/dns-records/dns-cname-record/) then click Dig button, and you will got result of:
+
+> **[cp-upload-staging.digiteer.dev@8.8.4.4 (Default):](<>)**\
+> cp-upload-staging.digiteer.dev.	300 IN	CNAME	d2iuzkbz6gz75k.cloudfront.net.
+
+When there is result, means the hostname is ok, probably on your AWS infrastructure
