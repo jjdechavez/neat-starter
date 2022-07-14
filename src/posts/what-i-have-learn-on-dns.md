@@ -33,6 +33,8 @@ Set type as [CNAME](https://www.cloudflare.com/learning/dns/dns-records/dns-cnam
 > **[cp-upload-staging.digiteer.dev@8.8.4.4 (Default):](<>)**\
 > cp-upload-staging.digiteer.dev.	300 IN	CNAME	d2iuzkbz6gz75k.cloudfront.net.
 
+Also try to set nameservers as ALL then try again to dig, and will get tons of details on hostname.
+
 When there is result, means the hostname is ok, probably on your AWS infrastructure
 
 On your AWS Console, go on CloudFront and check the hostname **cp-upload-staging.digiteer.dev** is available. Check your CloudFormation, check your cp-upload-stack and open the resources and event to check the status if it's deleted.
