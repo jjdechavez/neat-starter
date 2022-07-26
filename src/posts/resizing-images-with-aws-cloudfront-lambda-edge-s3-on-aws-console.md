@@ -49,7 +49,7 @@ Configure S3 Bucket
 
    * Please attach your ARN s3 and IAM Role, code sample show below.
 
-     ```
+     ```json
      {
       "Version": "2012-10-17",
       "Statement": [
@@ -84,7 +84,7 @@ Configure S3 Bucket
 5. Click Save changes button.
 6. On Permission tab of s3 bucket, click Edit on Cross-origin resource sharing (CORS) and copy the code below
 
-   ```
+   ```json
    [
        {
            "AllowedHeaders": [
