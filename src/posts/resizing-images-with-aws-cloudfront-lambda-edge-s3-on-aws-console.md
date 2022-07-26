@@ -9,7 +9,7 @@ tags:
   - lambda@edge
   - s3
 ---
-Resources (Blog AWS Resizing images with Amazon Cloudfront and Lambda Edge)\[https://aws.amazon.com/blogs/networking-and-content-delivery/resizing-images-with-amazon-cloudfront-lambdaedge-aws-cdn-blog/]
+Resources (Blog AWS Resizing images with Amazon CloudFront and Lambda Edge)\[https://aws.amazon.com/blogs/networking-and-content-delivery/resizing-images-with-amazon-cloudfront-lambdaedge-aws-cdn-blog/]
 
 Requirements:
 
@@ -81,3 +81,243 @@ Configure S3 Bucket
      }
      ```
 5. Click Save changes button.
+6. On Permission tab of s3 bucket, click Edit on Cross-origin resource sharing (CORS) and copy the code below
+
+   ```
+   [
+       {
+           "AllowedHeaders": [
+               "*"
+           ],
+           "AllowedMethods": [
+               "PUT"
+           ],
+           "AllowedOrigins": [
+               "*"
+           ],
+           "ExposeHeaders": [],
+           "MaxAgeSeconds": 3000
+       }
+   ]
+   ```
+7. Click the save changes.
+
+
+
+Create Lambda Edge for Origin Response and Viewer Request
+
+1. First, we are going to create Origin Response lambda function. Go to the lambda and click Create Function.
+2. Set function option to Author from scratch. Then enter the lambda name in our example we are going to name as uploadOriginResponse.
+3. Set Runtime as Node.js 14.x because lambda edge only works on Node.js 14.
+4. Set Architecture as x86_64 and click Create Function button.
+5. Open our created lambda function named uploadOriginResponse. Copy the Origin response code. Here it checks and invokes the resize trigger if required.
+
+   ```javascript
+   'use strict';
+
+   const http = require('http');
+   const https = require('https');
+   const querystring = require('querystring');
+
+   const AWS = require('aws-sdk');
+   const S3 = new AWS.S3({
+     signatureVersion: 'v4',
+   });
+   const Sharp = require('sharp');
+
+   // set the S3 and API GW endpoints
+   const BUCKET = 'image-resize-${AWS::AccountId}-us-east-1';
+
+   exports.handler = (event, context, callback) => {
+     let response = event.Records[0].cf.response;
+
+     console.log("Response status code :%s", response.status);
+
+     //check if image is not present
+     if (response.status == 404) {
+
+       let request = event.Records[0].cf.request;
+       let params = querystring.parse(request.querystring);
+
+       // if there is no dimension attribute, just pass the response
+       if (!params.d) {
+         callback(null, response);
+         return;
+       }
+
+       // read the dimension parameter value = width x height and split it by 'x'
+       let dimensionMatch = params.d.split("x");
+
+       // read the required path. Ex: uri /images/100x100/webp/image.jpg
+       let path = request.uri;
+
+       // read the S3 key from the path variable.
+       // Ex: path variable /images/100x100/webp/image.jpg
+       let key = path.substring(1);
+
+       // parse the prefix, width, height and image name
+       // Ex: key=images/200x200/webp/image.jpg
+       let prefix, originalKey, match, width, height, requiredFormat, imageName;
+       let startIndex;
+
+       try {
+         match = key.match(/(.*)\/(\d+)x(\d+)\/(.*)\/(.*)/);
+         prefix = match[1];
+         width = parseInt(match[2], 10);
+         height = parseInt(match[3], 10);
+
+         // correction for jpg required for 'Sharp'
+         requiredFormat = match[4] == "jpg" ? "jpeg" : match[4];
+         imageName = match[5];
+         originalKey = prefix + "/" + imageName;
+       }
+       catch (err) {
+         // no prefix exist for image..
+         console.log("no prefix present..");
+         match = key.match(/(\d+)x(\d+)\/(.*)\/(.*)/);
+         width = parseInt(match[1], 10);
+         height = parseInt(match[2], 10);
+
+         // correction for jpg required for 'Sharp'
+         requiredFormat = match[3] == "jpg" ? "jpeg" : match[3]; 
+         imageName = match[4];
+         originalKey = imageName;
+       }
+
+       // get the source image file
+       S3.getObject({ Bucket: BUCKET, Key: originalKey }).promise()
+         // perform the resize operation
+         .then(data => Sharp(data.Body)
+           .resize(width, height)
+           .toFormat(requiredFormat)
+           .toBuffer()
+         )
+         .then(buffer => {
+           // save the resized object to S3 bucket with appropriate object key.
+           S3.putObject({
+               Body: buffer,
+               Bucket: BUCKET,
+               ContentType: 'image/' + requiredFormat,
+               CacheControl: 'max-age=31536000',
+               Key: key,
+               StorageClass: 'STANDARD'
+           }).promise()
+           // even if there is exception in saving the object we send back the generated
+           // image back to viewer below
+           .catch(() => { console.log("Exception while writing resized image to bucket")});
+
+           // generate a binary response with resized image
+           response.status = 200;
+           response.body = buffer.toString('base64');
+           response.bodyEncoding = 'base64';
+           response.headers['content-type'] = [{ key: 'Content-Type', value: 'image/' + requiredFormat }];
+           callback(null, response);
+         })
+       .catch( err => {
+         console.log("Exception while reading source image :%j",err);
+       });
+     } // end of if block checking response statusCode
+     else {
+       // allow the response to pass through
+       callback(null, response);
+     }
+   };
+   ```
+6. We need to zip this code with package.json and node_modules and upload to our lambda function.
+7. And for our Viewer Request lambda function kindly follow the steps ^ on how creating lambda function. Copy the code. Here it manipulates our request uri.
+
+   ```javascript
+   'use strict';
+
+   const querystring = require('querystring');
+
+   // defines the allowed dimensions, default dimensions and how much variance from allowed
+   // dimension is allowed.
+
+   const variables = {
+           allowedDimension : [ {w:100,h:100}, {w:200,h:200}, {w:300,h:300}, {w:400,h:400} ],
+           defaultDimension : {w:200,h:200},
+           variance: 20,
+           webpExtension: 'webp'
+     };
+
+   exports.handler = (event, context, callback) => {
+       const request = event.Records[0].cf.request;
+       const headers = request.headers;
+
+       // parse the querystrings key-value pairs. In our case it would be d=100x100
+       const params = querystring.parse(request.querystring);
+
+       // fetch the uri of original image
+       let fwdUri = request.uri;
+
+       // if there is no dimension attribute, just pass the request
+       if(!params.d){
+           callback(null, request);
+           return;
+       }
+       // read the dimension parameter value = width x height and split it by 'x'
+       const dimensionMatch = params.d.split("x");
+
+       // set the width and height parameters
+       let width = dimensionMatch[0];
+       let height = dimensionMatch[1];
+
+       // parse the prefix, image name and extension from the uri.
+       // In our case /images/image.jpg
+
+       const match = fwdUri.match(/(.*)\/(.*)\.(.*)/);
+
+       let prefix = match[1];
+       let imageName = match[2];
+       let extension = match[3];
+
+       // define variable to be set to true if requested dimension is allowed.
+       let matchFound = false;
+
+       // calculate the acceptable variance. If image dimension is 105 and is within acceptable
+       // range, then in our case, the dimension would be corrected to 100.
+       let variancePercent = (variables.variance/100);
+
+       for (let dimension of variables.allowedDimension) {
+           let minWidth = dimension.w - (dimension.w * variancePercent);
+           let maxWidth = dimension.w + (dimension.w * variancePercent);
+           if(width >= minWidth && width <= maxWidth){
+               width = dimension.w;
+               height = dimension.h;
+               matchFound = true;
+               break;
+           }
+       }
+       // if no match is found from allowed dimension with variance then set to default
+       //dimensions.
+       if(!matchFound){
+           width = variables.defaultDimension.w;
+           height = variables.defaultDimension.h;
+       }
+
+       // read the accept header to determine if webP is supported.
+       let accept = headers['accept']?headers['accept'][0].value:"";
+
+       let url = [];
+       // build the new uri to be forwarded upstream
+       url.push(prefix);
+       url.push(width+"x"+height);
+     
+       // check support for webp
+       if (accept.includes(variables.webpExtension)) {
+           url.push(variables.webpExtension);
+       }
+       else{
+           url.push(extension);
+       }
+       url.push(imageName+"."+extension);
+
+       fwdUri = url.join("/");
+
+       // final modified url is of format /images/200x200/webp/image.jpg
+       request.uri = fwdUri;
+       callback(null, request);
+   };
+   ```
+8. Zip the viewer request code, for our example we are going to name this function as uploadViewerRequest and upload the zip on the lambda function.
