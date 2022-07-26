@@ -102,8 +102,6 @@ Configure S3 Bucket
    ```
 7. Click the save changes.
 
-
-
 Create Lambda Edge for Origin Response and Viewer Request
 
 1. First, we are going to create Origin Response lambda function. Go to the lambda and click Create Function.
@@ -321,3 +319,34 @@ Create Lambda Edge for Origin Response and Viewer Request
    };
    ```
 8. Zip the viewer request code, for our example we are going to name this function as uploadViewerRequest and upload the zip on the lambda function.
+
+
+
+Creating CloudFront Distribution
+
+1. Go to the AWS CloudFront, and click Create Distribution.
+2. On Origin, select the s3 that we created, in our example is assets.jjdechavez.dev.s3.us-east-1.amazonaws.com
+3. On Default cache behavior section, on Viewer set as Redirect HTTP to HTTPS.
+4. On Cache policy, we are going to create a custom cache policy by click create policy
+
+   * Set a name, in our example we are going to name as CF-Cache-Lambda-Edge.
+   * On Cache setting, select Include specified query string and add on allow **d** query string.
+5. Click Create policy.
+6. On Cache Policy, select our custom policy named CF-Cache-Lambda-Edge.
+7. On Function associations, Viewer Request Function type select Lambda@Edge and get the lambda Viewer Request ARN and paste on Function ARN field. The same goes to the Origin Response.
+8. Click Create Distribution.
+
+
+
+Deploy our Origin Response and Viewer Request Lambda Function
+
+1. Go to the AWS Lambda and open Origin Response name as uploadOriginResponse.
+2. On Action, click Deploy to Lambda@Edge. Select Configure new CloudFront trigger option.
+3. Get the CloudFront Distribution ARN and paste it.
+4. For our CloudFront event, select Origin Response and lastly, check Confirm deploy to Lambda@Edge.
+5. Wait deployment to be finish to check the status, go to the CloudFront distributions. On the list, check the Column Last Modified if it's deploying or already done.
+6. Go to the AWS Lambda and open Viewer Request name as uploadViewerRequest.
+7. On Action, click Deploy to Lambda@Edge. Select Configure new CloudFront trigger option.
+8. Get the CloudFront Distribution ARN and paste it.
+9. For our CloudFront event, select Viewer Request and lastly, check Confirm deploy to Lambda@Edge.
+10. Go back to the step 5.
