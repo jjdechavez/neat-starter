@@ -23,8 +23,9 @@ Creating S3 Bucket
 1. Go to your AWS Console and open s3.
 2. Create a new Bucket, make sure the name of the bucket would be the same on CloudFront CNAME let say our bucket name is assets.jjdechavez.dev.
 3. Make sure set AWS Region on us-east-1 because Lambda@Edge is only available on us-east-1.
-4. On Block Public Access settings for this bucket, uncheck the **Block all public access** and check the **"I acknowledge that the current settings might result in this bucket and the objects within becoming public."**
-5. Then create bucket.
+4. On Object Ownership, select ACLs enabled, and the Object Ownership is Bucket owner preferred
+5. On Block Public Access settings for this bucket, uncheck the **Block all public access** and check the **"I acknowledge that the current settings might result in this bucket and the objects within becoming public."**
+6. Then create bucket.
 
 Create IAM Role for Lambda edge
 
@@ -320,8 +321,6 @@ Create Lambda Edge for Origin Response and Viewer Request
    ```
 8. Zip the viewer request code, for our example we are going to name this function as uploadViewerRequest and upload the zip on the lambda function.
 
-
-
 Creating CloudFront Distribution
 
 1. Go to the AWS CloudFront, and click Create Distribution.
@@ -336,8 +335,6 @@ Creating CloudFront Distribution
 7. On Function associations, Viewer Request Function type select Lambda@Edge and get the lambda Viewer Request ARN and paste on Function ARN field. The same goes to the Origin Response.
 8. Click Create Distribution.
 
-
-
 Deploy our Origin Response and Viewer Request Lambda Function
 
 1. Go to the AWS Lambda and open Origin Response name as uploadOriginResponse.
@@ -349,4 +346,16 @@ Deploy our Origin Response and Viewer Request Lambda Function
 7. On Action, click Deploy to Lambda@Edge. Select Configure new CloudFront trigger option.
 8. Get the CloudFront Distribution ARN and paste it.
 9. For our CloudFront event, select Viewer Request and lastly, check Confirm deploy to Lambda@Edge.
-10. Go back to the step 5.
+10. Go back to step 5.
+
+
+
+Testing our implementation
+
+1. Upload a high-res image file (let’s call it image.jpg) into ‘images’ folder on the origin bucket created.
+2. Open your favorite browser and navigate to `https://{cloudfront-domain}/images/image.jpg?d=100x100` where
+
+* cloudfront-domain – is the CloudFront domain name of the distribution created using the CloudFormation template above.
+* 100×100 – is the desired width and height. Change the dimension by altering value of query parameter ‘d’ to 200×200 or 300×300.
+
+You should see the corresponding resized image.
